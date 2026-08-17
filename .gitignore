@@ -1,0 +1,24 @@
+# Dependencies in any folder
+**/node_modules/
+
+# Environment files in any folder
+**/.env
+**/.env.*
+!**/.env.example
+
+# Builds
+**/dist/
+**/build/
+
+# Generated Prisma Client
+**/src/generated/prisma/
+
+# Logs
+**/*.log
+
+# macOS
+.DS_Store
+
+# Editors
+.vscode/
+.idea/

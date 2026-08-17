@@ -1,0 +1,483 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum SkillLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  ELITE
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+  PREFER_NOT_TO_SAY
+}
+
+enum SessionStatus {
+  SCHEDULED
+  ACTIVE
+  PAUSED
+  COMPLETED
+  CANCELLED
+}
+
+enum HostRole {
+  OWNER
+  CO_HOST
+}
+
+enum ParticipantStatus {
+  PARTNER_LOBBY
+  QUEUED
+  CALLED
+  READY
+  PLAYING
+  RESTING
+  LEFT
+}
+
+enum LobbyExitReason {
+  PAIRED
+  RESTING
+  LEFT_SESSION
+  HOST_REMOVED
+  SESSION_ENDED
+}
+
+enum PartnershipRequestSource {
+  PLAYER_REQUEST
+  HOST_PROPOSAL
+  SYSTEM_SUGGESTION
+}
+
+enum PartnershipRequestStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  CANCELLED
+  EXPIRED
+}
+
+enum PartnershipStatus {
+  ACTIVE
+  QUEUED
+  CALLED
+  PLAYING
+  DISSOLVED
+}
+
+enum PartnershipDissolutionReason {
+  MATCH_FINISHED
+  LEFT_QUEUE
+  PLAYER_LEFT
+  HOST_DISSOLVED
+  SESSION_ENDED
+}
+
+enum QueueEntryStatus {
+  WAITING
+  CALLED
+  MATCHED
+  REMOVED
+}
+
+enum CourtStatus {
+  AVAILABLE
+  RESERVED
+  IN_USE
+  UNAVAILABLE
+}
+
+enum MatchStatus {
+  CONFIRMING
+  READY
+  PLAYING
+  SCORE_PENDING
+  AWAITING_VERIFICATION
+  COMPLETED
+  DISPUTED
+  CANCELLED
+}
+
+enum MatchSideName {
+  SIDE_A
+  SIDE_B
+}
+
+enum ConfirmationStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+  EXPIRED
+}
+
+enum ScoreSubmissionStatus {
+  PENDING_VERIFICATION
+  VERIFIED
+  DISPUTED
+  HOST_RESOLVED
+}
+
+enum MatchCallEventType {
+  CALLED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  REPLACED
+  CANCELLED
+}
+
+model Player {
+  id                String     @id @default(uuid())
+  firstName         String
+  lastName          String
+  email             String     @unique
+  passwordHash      String
+  profilePictureUrl String?
+  gender            Gender?
+  birthDate         DateTime?
+  skillLevel        SkillLevel
+  playStyle         String?
+  createdAt         DateTime   @default(now())
+  updatedAt         DateTime   @updatedAt
+
+  rating                PlayerRating?
+  createdSessions       OpenPlaySession[]    @relation("SessionCreator")
+  sessionHosts          SessionHost[]
+  sessionParticipations SessionParticipant[]
+  matchParticipations   MatchParticipant[]
+
+  @@index([lastName, firstName])
+}
+
+model PlayerRating {
+  id            String   @id @default(uuid())
+  playerId      String   @unique
+  rating        Int      @default(1000)
+  matchesRated  Int      @default(0)
+  isProvisional Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  player  Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+  history RatingHistory[]
+}
+
+model RatingHistory {
+  id             String   @id @default(uuid())
+  playerRatingId String
+  matchId        String
+  ratingBefore   Int
+  ratingChange   Int
+  ratingAfter    Int
+  createdAt      DateTime @default(now())
+
+  playerRating PlayerRating @relation(fields: [playerRatingId], references: [id], onDelete: Cascade)
+  match        Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([playerRatingId, matchId])
+  @@index([matchId])
+}
+
+model OpenPlaySession {
+  id          String        @id @default(uuid())
+  createdById String
+  name        String
+  description String?
+  joinCode    String        @unique
+  startsAt    DateTime
+  endsAt      DateTime?
+  status      SessionStatus @default(SCHEDULED)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  createdBy           Player               @relation("SessionCreator", fields: [createdById], references: [id])
+  hosts               SessionHost[]
+  participants        SessionParticipant[]
+  lobbyVisits         PartnerLobbyVisit[]
+  partnershipRequests PartnershipRequest[]
+  partnerships        Partnership[]
+  queueEntries        QueueEntry[]
+  courts              Court[]
+  matches             Match[]
+
+  @@index([createdById])
+  @@index([status, startsAt])
+}
+
+model SessionHost {
+  id         String   @id @default(uuid())
+  sessionId  String
+  playerId   String
+  role       HostRole @default(CO_HOST)
+  assignedAt DateTime @default(now())
+
+  session OpenPlaySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player  Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([sessionId, playerId])
+  @@index([playerId])
+}
+
+model SessionParticipant {
+  id           String            @id @default(uuid())
+  sessionId    String
+  playerId     String
+  status       ParticipantStatus @default(PARTNER_LOBBY)
+  declineCount Int               @default(0)
+  timeoutCount Int               @default(0)
+  joinedAt     DateTime          @default(now())
+  leftAt       DateTime?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+
+  session OpenPlaySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  player  Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  lobbyVisits                 PartnerLobbyVisit[]
+  sentPartnershipRequests     PartnershipRequest[] @relation("RequestSender")
+  receivedPartnershipRequests PartnershipRequest[] @relation("RequestRecipient")
+  proposedPartnershipRequests PartnershipRequest[] @relation("RequestProposer")
+  partnershipMemberships      PartnershipMember[]
+  confirmedMatchSides         MatchSide[]          @relation("MatchSideConfirmedBy")
+  matchParticipations         MatchParticipant[]
+  scoreSubmissions            ScoreSubmission[]    @relation("ScoreSubmittedBy")
+  scoreVerifications          ScoreSubmission[]    @relation("ScoreVerifiedBy")
+  scoreDisputes               ScoreSubmission[]    @relation("ScoreDisputedBy")
+  scoreResolutions            ScoreSubmission[]    @relation("ScoreResolvedBy")
+
+  @@unique([sessionId, playerId])
+  @@index([sessionId, status])
+  @@index([playerId])
+}
+
+model PartnerLobbyVisit {
+  id                   String           @id @default(uuid())
+  sessionId            String
+  sessionParticipantId String
+  enteredAt            DateTime         @default(now())
+  exitedAt             DateTime?
+  exitReason           LobbyExitReason?
+
+  session     OpenPlaySession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  participant SessionParticipant @relation(fields: [sessionParticipantId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, enteredAt])
+  @@index([sessionParticipantId, exitedAt])
+}
+
+model PartnershipRequest {
+  id                      String                   @id @default(uuid())
+  sessionId               String
+  senderParticipantId     String
+  recipientParticipantId  String
+  proposedByParticipantId String?
+  source                  PartnershipRequestSource @default(PLAYER_REQUEST)
+  status                  PartnershipRequestStatus @default(PENDING)
+  expiresAt               DateTime
+  respondedAt             DateTime?
+  createdAt               DateTime                 @default(now())
+  updatedAt               DateTime                 @updatedAt
+
+  session    OpenPlaySession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  sender     SessionParticipant  @relation("RequestSender", fields: [senderParticipantId], references: [id], onDelete: Cascade)
+  recipient  SessionParticipant  @relation("RequestRecipient", fields: [recipientParticipantId], references: [id], onDelete: Cascade)
+  proposedBy SessionParticipant? @relation("RequestProposer", fields: [proposedByParticipantId], references: [id], onDelete: SetNull)
+
+  @@index([sessionId, status])
+  @@index([senderParticipantId, status])
+  @@index([recipientParticipantId, status])
+}
+
+model Partnership {
+  id                String                        @id @default(uuid())
+  sessionId         String
+  status            PartnershipStatus             @default(ACTIVE)
+  formedAt          DateTime                      @default(now())
+  dissolvedAt       DateTime?
+  dissolutionReason PartnershipDissolutionReason?
+
+  session    OpenPlaySession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  members    PartnershipMember[]
+  queueEntry QueueEntry?
+  matchSides MatchSide[]
+  callEvents MatchCallEvent[]
+
+  @@index([sessionId, status])
+}
+
+model PartnershipMember {
+  id                   String   @id @default(uuid())
+  partnershipId        String
+  sessionParticipantId String
+  joinedAt             DateTime @default(now())
+
+  partnership Partnership        @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+  participant SessionParticipant @relation(fields: [sessionParticipantId], references: [id], onDelete: Cascade)
+
+  @@unique([partnershipId, sessionParticipantId])
+  @@index([sessionParticipantId])
+}
+
+model QueueEntry {
+  id                 String           @id @default(uuid())
+  sessionId          String
+  partnershipId      String           @unique
+  status             QueueEntryStatus @default(WAITING)
+  queuedAt           DateTime         @default(now())
+  originalPriorityAt DateTime         @default(now())
+  calledAt           DateTime?
+  removedAt          DateTime?
+  declineCount       Int              @default(0)
+  timeoutCount       Int              @default(0)
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  session     OpenPlaySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  partnership Partnership     @relation(fields: [partnershipId], references: [id], onDelete: Cascade)
+
+  @@index([sessionId, status, originalPriorityAt])
+}
+
+model Court {
+  id          String      @id @default(uuid())
+  sessionId   String
+  courtNumber Int
+  name        String?
+  status      CourtStatus @default(AVAILABLE)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  session OpenPlaySession @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  matches Match[]
+
+  @@unique([sessionId, courtNumber])
+  @@index([sessionId, status])
+}
+
+model Match {
+  id                    String      @id @default(uuid())
+  sessionId             String
+  courtId               String
+  status                MatchStatus @default(CONFIRMING)
+  calledAt              DateTime    @default(now())
+  confirmationExpiresAt DateTime
+  readyAt               DateTime?
+  startedAt             DateTime?
+  endedAt               DateTime?
+  completedAt           DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+
+  session         OpenPlaySession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  court           Court              @relation(fields: [courtId], references: [id])
+  sides           MatchSide[]
+  participants    MatchParticipant[]
+  games           MatchGame[]
+  scoreSubmission ScoreSubmission?
+  ratingChanges   RatingHistory[]
+  callEvents      MatchCallEvent[]
+
+  @@index([sessionId, status])
+  @@index([courtId, status])
+}
+
+model MatchSide {
+  id                       String             @id @default(uuid())
+  matchId                  String
+  partnershipId            String
+  side                     MatchSideName
+  confirmationStatus       ConfirmationStatus @default(PENDING)
+  confirmedByParticipantId String?
+  confirmedAt              DateTime?
+  declineReason            String?
+  declinedAt               DateTime?
+
+  match        Match               @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  partnership  Partnership         @relation(fields: [partnershipId], references: [id])
+  confirmedBy  SessionParticipant? @relation("MatchSideConfirmedBy", fields: [confirmedByParticipantId], references: [id], onDelete: SetNull)
+  participants MatchParticipant[]
+
+  @@unique([matchId, side])
+  @@index([partnershipId])
+}
+
+model MatchParticipant {
+  id                   String   @id @default(uuid())
+  matchId              String
+  matchSideId          String
+  sessionParticipantId String
+  playerId             String
+  ratingBefore         Int
+  createdAt            DateTime @default(now())
+
+  match              Match              @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  matchSide          MatchSide          @relation(fields: [matchSideId], references: [id], onDelete: Cascade)
+  sessionParticipant SessionParticipant @relation(fields: [sessionParticipantId], references: [id])
+  player             Player             @relation(fields: [playerId], references: [id])
+
+  @@unique([matchId, playerId])
+  @@index([playerId, createdAt])
+  @@index([sessionParticipantId])
+}
+
+model MatchGame {
+  id          String        @id @default(uuid())
+  matchId     String
+  gameNumber  Int
+  sideAScore  Int
+  sideBScore  Int
+  winningSide MatchSideName
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  @@unique([matchId, gameNumber])
+}
+
+model ScoreSubmission {
+  id                       String                @id @default(uuid())
+  matchId                  String                @unique
+  submittedByParticipantId String
+  verifiedByParticipantId  String?
+  disputedByParticipantId  String?
+  resolvedByParticipantId  String?
+  status                   ScoreSubmissionStatus @default(PENDING_VERIFICATION)
+  submittedAt              DateTime              @default(now())
+  verifiedAt               DateTime?
+  disputedAt               DateTime?
+  disputeReason            String?
+  resolvedAt               DateTime?
+  createdAt                DateTime              @default(now())
+  updatedAt                DateTime              @updatedAt
+
+  match       Match               @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  submittedBy SessionParticipant  @relation("ScoreSubmittedBy", fields: [submittedByParticipantId], references: [id])
+  verifiedBy  SessionParticipant? @relation("ScoreVerifiedBy", fields: [verifiedByParticipantId], references: [id], onDelete: SetNull)
+  disputedBy  SessionParticipant? @relation("ScoreDisputedBy", fields: [disputedByParticipantId], references: [id], onDelete: SetNull)
+  resolvedBy  SessionParticipant? @relation("ScoreResolvedBy", fields: [resolvedByParticipantId], references: [id], onDelete: SetNull)
+}
+
+model MatchCallEvent {
+  id            String             @id @default(uuid())
+  matchId       String
+  partnershipId String
+  eventType     MatchCallEventType
+  reason        String?
+  createdAt     DateTime           @default(now())
+
+  match       Match       @relation(fields: [matchId], references: [id], onDelete: Cascade)
+  partnership Partnership @relation(fields: [partnershipId], references: [id])
+
+  @@index([matchId, createdAt])
+  @@index([partnershipId])
+}
