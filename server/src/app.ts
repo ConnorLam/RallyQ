@@ -2,6 +2,7 @@ import express from "express"
 import cors from "cors"
 import cookieParser from "cookie-parser"
 import prisma from "./config/prisma.js"
+import playerRoutes from "./routes/playerRoutes.js"
 
 const app = express()
 
@@ -9,6 +10,8 @@ app.use(cors())
 app.use(express.json())
 app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
+
+app.use("/api/players", playerRoutes)
 
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
