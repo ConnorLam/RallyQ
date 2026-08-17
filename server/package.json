@@ -35,6 +35,8 @@
   },
   "allowScripts": {
     "@prisma/engines@7.9.1": true,
-    "prisma@7.9.1": true
+    "prisma@7.9.1": true,
+    "esbuild@0.28.2": true,
+    "fsevents@2.3.3": true
   }
 }
