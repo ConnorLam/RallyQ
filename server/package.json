@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
     "db:format": "prisma format",
     "db:validate": "prisma validate",
     "db:generate": "prisma generate",
@@ -11,11 +14,23 @@
     "db:studio": "prisma studio"
   },
   "dependencies": {
+    "@prisma/adapter-pg": "^7.9.1",
     "@prisma/client": "latest",
-    "dotenv": "latest"
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "dotenv": "latest",
+    "express": "^5.2.1",
+    "pg": "^8.23.0",
+    "zod": "^4.4.3"
   },
   "devDependencies": {
+    "@types/cookie-parser": "^1.4.10",
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.6",
+    "@types/node": "^26.2.0",
+    "@types/pg": "^8.23.1",
     "prisma": "latest",
+    "tsx": "^4.23.12",
     "typescript": "latest"
   },
   "allowScripts": {
