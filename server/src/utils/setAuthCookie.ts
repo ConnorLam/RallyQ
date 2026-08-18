@@ -1,13 +1,12 @@
 import type { Response } from "express"
+import { env } from "../config/env.js"
 
 export const setAuthCookie = (res: Response, token: string): void => {
-
-    res.cookie("rallyq_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      path: "/",
-      maxAge: 7 * 24 * 60 * 60 * 1000, //7 days in milliseconds
-    })
-
+  res.cookie("rallyq_token", token, {
+    httpOnly: true,
+    secure: env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+    maxAge: env.AUTH_SESSION_DAYS * 24 * 60 * 60 * 1000,
+  })
 }

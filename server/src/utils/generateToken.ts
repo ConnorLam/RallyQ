@@ -1,20 +1,14 @@
 import jwt, { type SignOptions } from "jsonwebtoken"
+import { env } from "../config/env.js"
 
 export const generateToken = (playerId: string): string => {
-  const secretKey = process.env.JWT_SECRET
-  const expiresIn = process.env.JWT_EXPIRES_IN ?? "7d"
-
-  if (!secretKey) {
-    throw new Error("JWT_SECRET_MISSING")
-  }
-
   const payload = {
     playerId,
   }
 
   const options: SignOptions = {
-    expiresIn: expiresIn as SignOptions["expiresIn"],
+    expiresIn: `${env.AUTH_SESSION_DAYS}d` as SignOptions["expiresIn"],
   }
 
-  return jwt.sign(payload, secretKey, options)
+  return jwt.sign(payload, env.JWT_SECRET, options)
 }
