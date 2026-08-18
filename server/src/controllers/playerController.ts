@@ -1,6 +1,9 @@
 import type { Request, Response } from "express"
-import { registerPlayerSchema } from "../schemas/playerSchema.js"
-import { createPlayer } from "../services/playerService.js"
+import {
+  registerPlayerSchema,
+  loginPlayerSchema,
+} from "../schemas/playerSchema.js"
+import { createPlayer, loginPlayer } from "../services/playerService.js"
 
 export const registerPlayer = async (req: Request, res: Response) => {
   const validationResult = registerPlayerSchema.safeParse(req.body)
@@ -11,7 +14,6 @@ export const registerPlayer = async (req: Request, res: Response) => {
       message: "Invalid registration data",
       errors: validationResult.error.issues,
     })
-
     return
   }
 
@@ -22,21 +24,58 @@ export const registerPlayer = async (req: Request, res: Response) => {
       success: true,
       player,
     })
-  } catch (error) {
-    if (error instanceof Error && error.message === "EMAIL_ALREADY_EXISTS") {
+  } catch (err) {
+    if (err instanceof Error && err.message === "EMAIL_ALREADY_EXISTS") {
       res.status(409).json({
         success: false,
         message: "A player with that email already exists",
       })
-
       return
     }
 
-    console.error("Player registration failed:", error)
+    console.error("Player registration failed:", err)
 
     res.status(500).json({
       success: false,
       message: "Unable to register player",
+    })
+  }
+}
+
+export const loginPlayerController = async (req: Request, res: Response) => {
+  const validationResult = loginPlayerSchema.safeParse(req.body)
+
+  if (!validationResult.success) {
+    res.status(400).json({
+      success: false,
+      message: "Invalid login data",
+      errors: validationResult.error.issues,
+    })
+
+    return
+  }
+
+  try {
+    const player = await loginPlayer(validationResult.data)
+
+    res.status(200).json({
+      success: true,
+      player
+    })
+  } catch (err) {
+    if (err instanceof Error && err.message === "INVALID_CREDENTIALS") {
+      res.status(401).json({
+        success: false,
+        message: "Invalid email or password",
+      })
+      return
+    }
+
+    console.error("Player login failed:", err)
+
+    res.status(500).json({
+      success: false,
+      message: "Unable to log in",
     })
   }
 }

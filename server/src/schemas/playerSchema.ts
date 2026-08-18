@@ -8,6 +8,11 @@ export const registerPlayerSchema = z.object({
   skillLevel: z.enum(["BEGINNER", "INTERMEDIATE", "ADVANCED", "ELITE"]),
 })
 
+export const loginPlayerSchema = z.object({
+  email: z.string().trim().toLowerCase().pipe(z.email("Invalid email address")),
+  password: z.string().min(1, "Password is required"),
+})
+
 // for testing
 // const result = registerPlayerSchema.safeParse({
 //   firstName: "",
@@ -21,3 +26,4 @@ export const registerPlayerSchema = z.object({
 // npx tsx src/schemas/playerSchema.ts
 
 export type RegisterPlayerInput = z.infer<typeof registerPlayerSchema>
+export type LoginPlayerInput = z.infer<typeof loginPlayerSchema>

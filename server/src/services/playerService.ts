@@ -1,6 +1,9 @@
 import bcrypt from "bcrypt"
 import prisma from "../config/prisma.js"
-import type { RegisterPlayerInput } from "../schemas/playerSchema.js"
+import type {
+  RegisterPlayerInput,
+  LoginPlayerInput,
+} from "../schemas/playerSchema.js"
 
 export const createPlayer = async (input: RegisterPlayerInput) => {
   const existingPlayer = await prisma.player.findUnique({
@@ -43,4 +46,44 @@ export const createPlayer = async (input: RegisterPlayerInput) => {
   })
 
   return player
+}
+
+export const loginPlayer = async (input: LoginPlayerInput) => {
+  const player = await prisma.player.findUnique({
+    where: {
+      email: input.email,
+    },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      skillLevel: true,
+      passwordHash: true,
+      rating: {
+        select: {
+          rating: true,
+          matchesRated: true,
+          isProvisional: true,
+        },
+      },
+    },
+  })
+
+  if (!player) {
+    throw new Error("INVALID_CREDENTIALS")
+  }
+
+  const passwordsMatch = await bcrypt.compare(
+    input.password,
+    player.passwordHash,
+  )
+
+  if (!passwordsMatch) {
+    throw new Error("INVALID_CREDENTIALS")
+  }
+
+  const { passwordHash, ...safePlayer } = player
+
+  return safePlayer
 }
