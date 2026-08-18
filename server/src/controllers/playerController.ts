@@ -4,6 +4,8 @@ import {
   loginPlayerSchema,
 } from "../schemas/playerSchema.js"
 import { createPlayer, loginPlayer } from "../services/playerService.js"
+import { generateToken } from "../utils/generateToken.js"
+import { setAuthCookie } from "../utils/setAuthCookie.js"
 
 export const registerPlayer = async (req: Request, res: Response) => {
   const validationResult = registerPlayerSchema.safeParse(req.body)
@@ -19,6 +21,8 @@ export const registerPlayer = async (req: Request, res: Response) => {
 
   try {
     const player = await createPlayer(validationResult.data)
+    const token = generateToken(player.id)
+    setAuthCookie(res, token)
 
     res.status(201).json({
       success: true,
@@ -57,10 +61,12 @@ export const loginPlayerController = async (req: Request, res: Response) => {
 
   try {
     const player = await loginPlayer(validationResult.data)
+    const token = generateToken(player.id)
+    setAuthCookie(res, token)
 
     res.status(200).json({
       success: true,
-      player
+      player,
     })
   } catch (err) {
     if (err instanceof Error && err.message === "INVALID_CREDENTIALS") {
