@@ -1,9 +1,9 @@
 import { Router } from "express"
-import { loginPlayerController, registerPlayer } from "../controllers/playerController.js"
+import { loginPlayerController, registerPlayerController } from "../controllers/playerController.js"
 
 const router = Router()
 
-router.post("/register", registerPlayer)
+router.post("/register", registerPlayerController)
 router.post("/login", loginPlayerController)
 
 export default router

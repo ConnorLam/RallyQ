@@ -7,7 +7,7 @@ import { createPlayer, loginPlayer } from "../services/playerService.js"
 import { generateToken } from "../utils/generateToken.js"
 import { setAuthCookie } from "../utils/setAuthCookie.js"
 
-export const registerPlayer = async (req: Request, res: Response) => {
+export const registerPlayerController = async (req: Request, res: Response) => {
   const validationResult = registerPlayerSchema.safeParse(req.body)
 
   if (!validationResult.success) {
