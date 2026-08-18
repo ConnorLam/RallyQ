@@ -169,22 +169,31 @@ model PlayerRating {
 
   player  Player          @relation(fields: [playerId], references: [id], onDelete: Cascade)
   history RatingHistory[]
+
+  @@index([rating])
 }
 
 model RatingHistory {
-  id             String   @id @default(uuid())
+  id             String @id @default(uuid())
   playerRatingId String
   matchId        String
   ratingBefore   Int
   ratingChange   Int
   ratingAfter    Int
-  createdAt      DateTime @default(now())
+
+  expectedScore Float
+  actualScore   Float
+  kFactor       Int
+
+  createdAt DateTime @default(now())
 
   playerRating PlayerRating @relation(fields: [playerRatingId], references: [id], onDelete: Cascade)
-  match        Match        @relation(fields: [matchId], references: [id], onDelete: Cascade)
+
+  match Match @relation(fields: [matchId], references: [id], onDelete: Cascade)
 
   @@unique([playerRatingId, matchId])
   @@index([matchId])
+  @@index([playerRatingId, createdAt])
 }
 
 model OpenPlaySession {
@@ -364,18 +373,21 @@ model Court {
 }
 
 model Match {
-  id                    String      @id @default(uuid())
-  sessionId             String
-  courtId               String
-  status                MatchStatus @default(CONFIRMING)
-  calledAt              DateTime    @default(now())
+  id                String         @id @default(uuid())
+  sessionId         String
+  courtId           String
+  status            MatchStatus    @default(CONFIRMING)
+  winningSide       MatchSideName?
+  ratingProcessedAt DateTime
+
+  calledAt              DateTime  @default(now())
   confirmationExpiresAt DateTime
   readyAt               DateTime?
   startedAt             DateTime?
   endedAt               DateTime?
   completedAt           DateTime?
-  createdAt             DateTime    @default(now())
-  updatedAt             DateTime    @updatedAt
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
 
   session         OpenPlaySession    @relation(fields: [sessionId], references: [id], onDelete: Cascade)
   court           Court              @relation(fields: [courtId], references: [id])
