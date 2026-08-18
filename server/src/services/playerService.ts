@@ -87,3 +87,25 @@ export const loginPlayer = async (input: LoginPlayerInput) => {
 
   return safePlayer
 }
+
+export const getPlayerById = async (playerId: string) => {
+  const player = await prisma.player.findUnique({
+    where: { id: playerId },
+    select: {
+      id: true,
+      email: true,
+      firstName: true,
+      lastName: true,
+      skillLevel: true,
+      rating: {
+        select: {
+          rating: true,
+          matchesRated: true,
+          isProvisional: true,
+        },
+      },
+    },
+  })
+
+  return player
+}

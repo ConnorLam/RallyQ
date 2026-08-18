@@ -3,7 +3,11 @@ import {
   registerPlayerSchema,
   loginPlayerSchema,
 } from "../schemas/playerSchema.js"
-import { createPlayer, loginPlayer } from "../services/playerService.js"
+import {
+  createPlayer,
+  loginPlayer,
+  getPlayerById,
+} from "../services/playerService.js"
 import { generateToken } from "../utils/generateToken.js"
 import { setAuthCookie } from "../utils/setAuthCookie.js"
 
@@ -82,6 +86,37 @@ export const loginPlayerController = async (req: Request, res: Response) => {
     res.status(500).json({
       success: false,
       message: "Unable to log in",
+    })
+  }
+}
+
+export const getCurrentPlayerController = async (
+  req: Request,
+  res: Response,
+) => {
+  if (!req.playerId) {
+    res.status(401).json({ success: false, message: "Not authenticated" })
+    return
+  }
+
+  try {
+    const player = await getPlayerById(req.playerId)
+    if (!player) {
+      res.status(404).json({
+        success: false,
+        message: "Player not found",
+      })
+      return
+    }
+    res.status(200).json({
+      success: true,
+      player,
+    })
+  } catch (err) {
+    console.error("Get current player failed:", err)
+    res.status(500).json({
+      success: false,
+      message: "Unable to retrieve player",
     })
   }
 }
