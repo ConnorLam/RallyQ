@@ -3,6 +3,8 @@ import cors from "cors"
 import cookieParser from "cookie-parser"
 import prisma from "./config/prisma.js"
 import playerRoutes from "./routes/playerRoutes.js"
+import { errorHandler } from "./middleware/errorHandler.js"
+import { notFound } from "./middleware/notFound.js"
 
 const app = express()
 
@@ -39,5 +41,8 @@ app.get("/api/health/database", async (_req, res) => {
     })
   }
 })
+
+app.use(notFound)
+app.use(errorHandler)
 
 export default app
