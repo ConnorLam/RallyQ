@@ -10,6 +10,7 @@ import {
 } from "../services/playerService.js"
 import { generateToken } from "../utils/generateToken.js"
 import { setAuthCookie } from "../utils/setAuthCookie.js"
+import { clearAuthCookie } from "../utils/clearAuthCookie.js"
 
 export const registerPlayerController = async (req: Request, res: Response) => {
   const validationResult = registerPlayerSchema.safeParse(req.body)
@@ -119,4 +120,12 @@ export const getCurrentPlayerController = async (
       message: "Unable to retrieve player",
     })
   }
+}
+
+export const logoutPlayerController = (_req: Request, res: Response) => {
+  clearAuthCookie(res)
+  res.status(200).json({
+    success: true,
+    message: "Logged out successfully",
+  })
 }
