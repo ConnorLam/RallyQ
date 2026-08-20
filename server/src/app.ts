@@ -3,6 +3,7 @@ import cors from "cors"
 import cookieParser from "cookie-parser"
 import prisma from "./config/prisma.js"
 import playerRoutes from "./routes/playerRoutes.js"
+import sessionRoutes from "./routes/sessionRoutes.js"
 import { errorHandler } from "./middleware/errorHandler.js"
 import { notFound } from "./middleware/notFound.js"
 
@@ -14,6 +15,7 @@ app.use(express.urlencoded({ extended: true }))
 app.use(cookieParser())
 
 app.use("/api/players", playerRoutes)
+app.use("/api/sessions", sessionRoutes)
 
 app.get("/api/health", (_req, res) => {
   res.status(200).json({
